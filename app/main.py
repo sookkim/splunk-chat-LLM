@@ -112,10 +112,10 @@ async def setup_telemetry():
         # Use canonical ScorerName values (golden demo pattern — same enum works for
         # both log stream metrics and experiments, values match the Protect API snake_case)
         from galileo_core.schemas.shared.scorers.scorer_name import ScorerName as GalileoScorers
-        from galileo.log_streams import enable_metrics
+        from splunk_ao.agent_streams import enable_evaluators
 
-        project_name    = os.getenv("GALILEO_PROJECT", "nkim-chatbot")
-        log_stream_name = os.getenv("GALILEO_LOG_STREAM", "production")
+        project_name    = os.getenv("SPLUNK_AO_PROJECT", "nkim-chatbot")
+        log_stream_name = os.getenv("SPLUNK_AO_AGENT_STREAM", "production")
 
         wanted = [
             # RAG quality
@@ -140,14 +140,14 @@ async def setup_telemetry():
             GalileoScorers.prompt_injection_luna,
         ]
 
-        from galileo.log_stream import LogStream
+        from splunk_ao.agent_stream import AgentStream as LogStream
         _ls = LogStream.get(name=log_stream_name, project_name=project_name)
 
         # The upsert REPLACES the scorer set, so merge with what is already configured
         # in the Galileo console instead of silently clobbering it.
         existing = list(_ls.get_metrics())
         merged = existing + [m.value for m in wanted if m.value not in existing]
-        enable_metrics(project_name=project_name, log_stream_name=log_stream_name, metrics=merged)
+        enable_evaluators(project_name=project_name, agent_stream_name=log_stream_name, metrics=merged)
 
         # Read back: a metric being requested is not proof it is on.
         actual = set(LogStream.get(name=log_stream_name, project_name=project_name).get_metrics())
@@ -189,8 +189,8 @@ async def setup_telemetry():
             # Docs: set env vars so SDK can resolve IDs internally
             if g.project_id:
                 os.environ["GALILEO_PROJECT_ID"] = str(g.project_id)
-            if g.log_stream_id:
-                os.environ["GALILEO_LOG_STREAM_ID"] = str(g.log_stream_id)
+            if g.agent_stream_id:
+                os.environ["GALILEO_LOG_STREAM_ID"] = str(g.agent_stream_id)
 
             agent_control.init(
                 agent_name=agent_name,
@@ -201,9 +201,9 @@ async def setup_telemetry():
                 observability_enabled=True,
                 observability_sink_name="registered",
                 target_type=target_type,
-                target_id=str(g.log_stream_id),
+                target_id=str(g.agent_stream_id),
             )
-            _log.warning("Agent Control initialized for agent '%s' → log_stream_id=%s", agent_name, g.log_stream_id)
+            _log.warning("Agent Control initialized for agent '%s' → log_stream_id=%s", agent_name, g.agent_stream_id)
         else:
             _log.warning("Agent Control server not reachable at %s — skipping init, @control calls will fall back", server_url)
     except Exception:

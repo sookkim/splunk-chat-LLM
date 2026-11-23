@@ -19,38 +19,38 @@ from opentelemetry.util.genai.handler import get_telemetry_handler
 
 _genai_handler = get_telemetry_handler()
 
-from galileo import GalileoLogger
+from splunk_ao import SplunkAOLogger
 from agent_control import control, ControlViolationError, ControlSteerError
 
-_galileo: GalileoLogger | None = None
+_galileo: SplunkAOLogger | None = None
 _galileo_sessions: set[str] = set()  # tracks which session_ids have start_session() called
 
-def _get_galileo() -> GalileoLogger | None:
-    """Initialize GalileoLogger using project/log-stream IDs (like golden demo)."""
+def _get_galileo() -> SplunkAOLogger | None:
+    """Initialize SplunkAOLogger using project/log-stream IDs (like golden demo)."""
     global _galileo
     if _galileo is not None:
         return _galileo
     import logging
     _log = logging.getLogger(__name__)
     try:
-        project_name    = os.getenv("GALILEO_PROJECT", "nkim-chatbot")
-        log_stream_name = os.getenv("GALILEO_LOG_STREAM", "production")
+        project_name    = os.getenv("SPLUNK_AO_PROJECT", "nkim-chatbot")
+        log_stream_name = os.getenv("SPLUNK_AO_AGENT_STREAM", "production")
 
         # Resolve IDs first (golden demo pattern — avoids accidental project creation)
-        from galileo.projects import Projects
-        from galileo.log_streams import LogStreams
+        from splunk_ao.projects import Projects
+        from splunk_ao.agent_streams import AgentStreams
         project    = Projects().get_with_env_fallbacks(name=project_name)
         project_id = str(project.id) if project else None
 
-        log_stream    = LogStreams().get(name=log_stream_name, project_name=project_name) if project_id else None
+        log_stream    = AgentStreams().get(name=log_stream_name, project_name=project_name) if project_id else None
         log_stream_id = str(log_stream.id) if log_stream else None
 
         if project_id and log_stream_id:
-            _galileo = GalileoLogger(project_id=project_id, log_stream_id=log_stream_id)
+            _galileo = SplunkAOLogger(project_id=project_id, agent_stream_id=log_stream_id)
         elif project_id:
-            _galileo = GalileoLogger(project_id=project_id, log_stream=log_stream_name)
+            _galileo = SplunkAOLogger(project_id=project_id, agent_stream=log_stream_name)
         else:
-            _galileo = GalileoLogger(project=project_name, log_stream=log_stream_name)
+            _galileo = SplunkAOLogger(project=project_name, agent_stream=log_stream_name)
 
         # Wire Agent Control bridge (golden demo calls this immediately after logger creation)
         try:
@@ -63,7 +63,7 @@ def _get_galileo() -> GalileoLogger | None:
     return _galileo
 
 
-def _ensure_session(g: GalileoLogger, session_id: str) -> None:
+def _ensure_session(g: SplunkAOLogger, session_id: str) -> None:
     """Start a Galileo session for this session_id if not already started (golden demo pattern)."""
     if session_id in _galileo_sessions:
         return
