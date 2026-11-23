@@ -5,7 +5,8 @@ pydantic-settings
 httpx
 python-dotenv
 langchain
-langchain-openai
+langchain-aws
+boto3>=1.39
 langchain-community
 langchain-core
 langchain-text-splitters
@@ -52,4 +53,4 @@ opentelemetry-instrumentation-milvus
 opentelemetry-instrumentation-asyncio
 opentelemetry-instrumentation-redis
 opentelemetry-instrumentation-langchain
-opentelemetry-instrumentation-openai
+opentelemetry-instrumentation-botocore

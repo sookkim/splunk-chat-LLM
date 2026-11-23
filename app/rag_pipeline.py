@@ -8,7 +8,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda
-from langchain_openai import ChatOpenAI
+from langchain_aws import ChatBedrockConverse
 from sentence_transformers import CrossEncoder
 from opentelemetry import trace, context as otel_context
 from opentelemetry.util.genai.types import (
@@ -163,11 +163,12 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "{question}"),
 ]).with_config({"run_name": "ChatPromptTemplate"})
 
-CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
+CHAT_MODEL = os.getenv("CHAT_MODEL", "global.anthropic.claude-haiku-5-5")
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
 
-llm = ChatOpenAI(model=CHAT_MODEL, temperature=TEMPERATURE, stream_usage=True, streaming=True)\
-    .with_config({"run_name": "ChatOpenAIChat"})
+_THINKING = os.getenv("BEDROCK_THINKING", "disabled" if "haiku" in CHAT_MODEL else "between_tools")
+llm = ChatBedrockConverse(model=CHAT_MODEL, region_name=os.getenv("AWS_REGION", "ap-northeast-2"), max_tokens=int(os.getenv("MAX_TOKENS", "2048")), additional_model_request_fields={"thinking": {"type": _THINKING}})\
+    .with_config({"run_name": "ChatBedrockConverse"})
 
 retrieve_stage = RunnableLambda(lambda x: {
     "docs": _milvus_search(x),
@@ -447,7 +448,7 @@ async def stream_generate(question: str, session_id: str = "default") -> AsyncGe
         agent = AgentInvocation(
             name="rag-pipeline",
             agent_type="rag",
-            provider="openai",
+            provider="aws.bedrock",
             conversation_id=session_id,
             input_messages=[InputMessage(role="user", parts=[Text(content=question)])],
         )
@@ -513,7 +514,7 @@ async def stream_generate(question: str, session_id: str = "default") -> AsyncGe
                 output={"role": "assistant", "content": full_response},
                 model=CHAT_MODEL,
                 temperature=TEMPERATURE,
-                name="openai-chat",
+                name="bedrock-claude",
                 # step_number is the "topological step number" the Agent graph builds
                 # edges from. Left unset, every span serializes as 0 and the graph can
                 # only guess — the llm node ends up floating with no incoming arrow.
