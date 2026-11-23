@@ -1,4 +1,4 @@
-# Secrets and account IDs come from the environment: SPLUNK_ACCESS_TOKEN, APPDYNAMICS_AGENT_ACCOUNT_NAME, APPDYNAMICS_CONTROLLER_HOST_NAME
+# Settings come from the environment (.env via run.sh): SPLUNK_ACCESS_TOKEN, SPLUNK_REALM, SERVICE_NAMESPACE
 receivers:
   otlp:
     protocols:
@@ -26,21 +26,9 @@ receivers:
 processors:
   resource:
     attributes:
-    - key: appdynamics.controller.account
-      action: upsert
-      value: "${env:APPDYNAMICS_AGENT_ACCOUNT_NAME}"
-    - key: appdynamics.controller.host
-      action: upsert
-      value: "${env:APPDYNAMICS_CONTROLLER_HOST_NAME}"
     - key: service.namespace
       action: upsert
-      value: "Nick-LLM"
-    - key: service.name
-      action: upsert
-      value: "streamlit_openai"
-    - key: appdynamics.controller.port
-      action: upsert
-      value: 443
+      value: "${env:SERVICE_NAMESPACE:-galileo-demo}"
   memory_limiter:
     check_interval: 2s
     limit_percentage: 75
@@ -66,9 +54,9 @@ exporters:
   #   sync_host_metadata: true
   #   correlation:
   otlphttp/splunk:
-    traces_endpoint:  https://ingest.us1.signalfx.com/v2/trace/otlp
-    metrics_endpoint: https://ingest.us1.signalfx.com/v2/datapoint/otlp
-    logs_endpoint:    https://ingest.us1.signalfx.com/v3/event
+    traces_endpoint:  https://ingest.${env:SPLUNK_REALM:-us1}.signalfx.com/v2/trace/otlp
+    metrics_endpoint: https://ingest.${env:SPLUNK_REALM:-us1}.signalfx.com/v2/datapoint/otlp
+    logs_endpoint:    https://ingest.${env:SPLUNK_REALM:-us1}.signalfx.com/v3/event
     headers:
       X-SF-Token: "${env:SPLUNK_ACCESS_TOKEN}"
   # Send everything to Splunk Observability Cloud over OTLP/HTTP
@@ -84,13 +72,13 @@ exporters:
   #   loglevel: info
   # Replaces deprecated "logging" exporter
   debug:
-    verbosity: detailed   # or: normal | detailed
+    verbosity: basic   # or: normal | detailed
 
 
 service:
   telemetry:
       logs:
-        level: debug 
+        level: info
   pipelines:
     traces:
       receivers: [otlp]
