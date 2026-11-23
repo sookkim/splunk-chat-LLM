@@ -1,3 +1,8 @@
+# Install with uv (pip backtracks for a very long time on this unpinned set):
+#   pip install uv && uv pip install -r requirements.txt
+# unstructured is not listed: PDFs load via pypdf. Add `unstructured[md]` only if you
+# index .md/.txt/.html files (it is imported lazily, so nothing else needs it).
+
 # --- App & RAG ---
 fastapi
 uvicorn[standard]
@@ -15,7 +20,6 @@ pymilvus
 langchain-huggingface
 sentence-transformers
 pypdf
-unstructured[all-docs]
 html2text
 markdown
 deepeval
@@ -30,12 +34,7 @@ galileo-core
 agent-control-sdk
 agent-control-evaluator-galileo
 
-# --- Splunk GenAI SDK ---
-# Not on PyPI — install from source:
-#   pip install /path/to/splunk-otel-python-contrib/util/opentelemetry-util-genai
-#   pip install /path/to/splunk-otel-python-contrib/util/opentelemetry-util-genai-evals
-#   pip install /path/to/splunk-otel-python-contrib/util/opentelemetry-util-genai-evals-deepeval
-#   pip install /path/to/splunk-otel-python-contrib/util/opentelemetry-util-genai-emitters-splunk
+# --- Splunk GenAI SDK (all on PyPI) ---
 splunk-opentelemetry>=2.0.0
 splunk-otel-util-genai
 splunk-otel-util-genai-evals
